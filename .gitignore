@@ -1,0 +1,7 @@
+
+*.pyc
+.idea/
+collatio.egg-info/
+build/
+dist/
+

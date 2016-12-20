@@ -5,27 +5,34 @@ from Dataset import Dataset
 
 import skimage.io as skio
 
-class FolderDataset(Dataset):
+class LabelledFolderDataset(Dataset):
 
-    '''
-    Flat Folder Dataset loader
-    '''
-    default_glob = ['*.png', '*.jpg']
-    def __init__(self, path, load_fn, split_label_fn=None, shuffle=True, seed=1337):
+    #TODO: Add glob for file type
+    def __init__(self, path, load_fn, shuffle=True, seed=1337):
 
-        if split_label_fn is None:
-            split_label_fn = self.default_split_label
-
-        self.split_label_fn = split_label_fn
-        X, Y = self.index_dir(path, split_label_fn)
-        super(FolderDataset, self).__init__(X=X, Y=Y, shuffle=shuffle, seed=seed)
+        X, Y = LabelledFolderDataset.index_dir(path)
+        X, Y = self.sort_by_label(X, Y)
+        super(LabelledFolderDataset, self).__init__(X=X, Y=Y, shuffle=shuffle, seed=seed)
+        self.__flatten_records()
         self.indices = Dataset.compute_indices(len(self.X), shuffle=shuffle, seed=seed)
         self.load_fn = load_fn
 
-    def default_split_label(self, file):
-        return file.split('/')[-1].split('.')[0]
+    def sort_by_label(self, X, Y):
 
-    def index_dir(self, path, split_label_fn):
+        idx = np.argsort(Y)
+        X = np.array(X)[idx]
+        Y = np.array(Y)[idx]
+        return list(X), list(Y),
+
+
+    def verify_labels(self):
+        for x, y in zip(self.X ,self.Y):
+            if not LabelledFolderDataset.split_label(x) == y:
+                print(x, y)
+
+
+    @staticmethod
+    def index_dir(path):
         dir_iter = scandir.scandir(path)
 
         file_count = 0
@@ -33,15 +40,27 @@ class FolderDataset(Dataset):
         Y = []
         X = []
 
-        files = []
-        labels = []
+        class_paths = []
+
         for it in dir_iter:
             file_count += 1
-            files.append(it.path)
-            l = split_label_fn(it.path)
-            labels.append(l)
+            class_paths.append(it.path)
 
-        return files, labels
+        num_models = 0
+
+        for c in class_paths:
+
+            m_list = []
+            i_list = []
+            for it in scandir.scandir(c):
+                num_models += 1
+                m_list.append(it.path)
+
+            X.append(m_list)
+            y = c.split("/")[-1]
+            Y.append(int(y))
+
+        return X, Y
 
     def __flatten_records(self):
 
@@ -76,7 +95,7 @@ class FolderDataset(Dataset):
         :param index:
         :return: np.array for the image
         '''
-        return np.array(self.load_fn(self.X[index])), np.array(self.Y[index])
+        return np.array(skio.imread(self.X[index])), np.array(self.Y[index])
 
     def get_indexed_path(self, index):
         return self.X[self.indices[index]]

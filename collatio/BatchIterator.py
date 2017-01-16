@@ -3,7 +3,7 @@ import numpy as np
 
 class BatchIterator(object):
 
-    def __init__(self, dataset, batch_size, callback, start=0, stop=-1, step=1):
+    def __init__(self, dataset, batch_size, callback=None, start=0, stop=-1, step=1):
         self.dataset = dataset
         self.batch_size = batch_size
         self.num_samples = len(dataset)
@@ -11,6 +11,10 @@ class BatchIterator(object):
         self.stop = (self.num_samples if stop == -1 else stop)
         self.step = (step if step >= 1 else 1)
         self.current_batch = 0
+
+        if callback is None:
+            callback = lambda x : x
+        self.callback = callback
 
     def __call__(self, *args, **kwargs):
         return self.__iter__()
@@ -34,6 +38,7 @@ class BatchIterator(object):
         batch_size = self.batch_size
         i = self.current_batch
         _slice = slice(i * batch_size, np.minimum((i + 1) * batch_size, num_samples))
+        self.current_batch += 1
         return self.dataset[_slice] + (i,)
 
 

@@ -198,4 +198,3 @@ class InstanceFolderDataset(Dataset):
 
         else:
             return self.read_data(item)
-        pass

@@ -84,7 +84,6 @@ class MultiProcessIterator(object):
             return ([], [], i)
 
         for j in range(len(results[0])):
-
             r = []
             for i in range(len(results)):
                 r.append(results[i][j])
@@ -103,3 +102,7 @@ class MultiProcessIterator(object):
 
     def __len__(self):
         return self.num_batches
+
+
+
+      
